@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Drawing tools</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div id="capture"></div>
+    <script>
+      function loadScript(src) {
+        var element = document.createElement("script");
+        element.src = src;
+        document.body.appendChild(element);
+      }
+
+      function getFile(path, asynch, callback) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", path, asynch);
+        xhr.onload = function (e) {
+          if (xhr.readyState === 4) {
+            callback(xhr.responseText);
+          }
+        };
+        xhr.onerror = function (e) {
+          console.error(xhr.status);
+        };
+        xhr.send(null);
+      }
+
+      function cap(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+      }
+
+      function pad(n, width, z) {
+        z = z || '0';
+        n = n + '';
+        return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+      }
+
+
+      function refreshData() {
+        getFile("data.json", true, function(response) {
+          console.log("Refreshing data...");
+          var preLength = data.length;
+          data = JSON.parse(response);
+
+          if (preLength != data.length) {
+            // Clear markers
+            for (var i = 0; i < markers.length; i++) {
+              listeners[i].a.remove();
+              listeners[i].b.remove();
+              markers[i].setMap(null);
+            }
+            listeners = [];
+            markers = [];
+
+            // Add updated markers
+            for (var i = 0; i < data.length; i++) {
+              var p = data[i];
+              if (!updated) {
+                map.setZoom(16);
+                map.panTo({lat: p.lat, lng: p.lng});
+                updated = true;
+              }
+
+              console.log("Adding marker " + p);
+
+              var infowindow = new google.maps.InfoWindow({
+              });
+
+              var image = "http://icons.iconarchive.com/icons/hektakun/pokemon/72/" + pad(p.id, 3) + "-" + cap(p.name) + "-icon.png";
+
+              var marker = new google.maps.Marker({
+                map: map,
+                position: {lat: p.lat, lng: p.lng},
+                label: p.name.charAt(0),
+                title: "<b>"+p.name+"</b><br>Time left: " + p.timeleft + "s<br>Lat: "+p.lat+"<br>Long: "+p.lng,
+                icon: image
+              });
+
+              var listenerPair = {
+                a: google.maps.event.addListener(marker, 'mouseover', function() {
+                  infowindow.setContent(this.title);
+                  infowindow.open(map, this);
+                }),
+
+                b: google.maps.event.addListener(marker, 'mouseout', function() {
+                  infowindow.close(map, this);
+                })
+              };
+
+              listeners.push(listenerPair);
+              markers.push(marker);
+            }
+          }
+        });
+      }
+
+      data = {};
+      map = null;
+      markers = [];
+      listeners = [];
+      updated = false;
+
+
+      getFile("config.json", false, function(configData) {
+        config = JSON.parse(configData)
+        console.log("Using api key: " + config.GOOGLE_MAPS_API_KEY);
+        loadScript("https://maps.googleapis.com/maps/api/js?key=" + config.GOOGLE_MAPS_API_KEY + "&libraries=drawing&callback=initMap");
+      });
+
+      function initMap() {
+        console.log("Initializing map");
+        setInterval(refreshData, 1000);
+
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: {lat: 0, lng: 0},
+          zoom: 4
+        });
+      }
+    </script>
+  </body>
+</html>
+Except as otherwise noted, the content of this page is licensed under the Creative Commons Attribution 3.0 License, and code samples are licensed under the Apache 2.0 License. For details, see our Site Policies. Java is a registered trademark of Oracle and/or its affiliates.

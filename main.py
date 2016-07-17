@@ -49,6 +49,9 @@ COORDS_ALTITUDE = 0
 FLOAT_LAT = 0
 FLOAT_LONG = 0
 
+DATA_FILE = 'data.json'
+DATA = []
+
 def f2i(float):
   return struct.unpack('<Q', struct.pack('<d', float))[0]
 
@@ -57,6 +60,31 @@ def f2h(float):
 
 def h2f(hex):
   return struct.unpack('<d', struct.pack('<Q', int(hex,16)))[0]
+
+def prune():
+    # prune despawned pokemon
+    cur_time = int(time.time())
+    for i, poke in reversed(list(enumerate(DATA))):
+        poke['timeleft'] = poke['timeleft'] - (cur_time - poke['timestamp'])
+        poke['timestamp'] = cur_time
+        if poke['timeleft'] <= 0:
+            DATA.pop(i)
+
+def write_data_to_file():
+    prune()
+
+    with open(DATA_FILE, 'w') as f:
+        json.dump(DATA, f, indent=2)
+
+def add_pokemon(pokeId, name, lat, lng, timestamp, timeleft):
+    DATA.append({
+        'id': pokeId,
+        'name': name,
+        'lat': lat,
+        'lng': lng,
+        'timestamp': timestamp,
+        'timeleft': timeleft
+    });
 
 def set_location(location_name):
     geolocator = GoogleV3()
@@ -232,8 +260,8 @@ def heartbeat(api_endpoint, access_token, response):
     heartbeat.ParseFromString(payload)
     return heartbeat
 
-
 def main():
+    write_data_to_file()
     pokemons = json.load(open('pokemon.json'))
     parser = argparse.ArgumentParser()
     parser.add_argument("-u", "--username", help="PTC Username", required=True)
@@ -330,11 +358,15 @@ def main():
 
             print("(%s) %s is visible at (%s, %s) for %s seconds (%sm %s from you)" % (poke.pokemon.PokemonId, pokemons[poke.pokemon.PokemonId - 1]['Name'], poke.Latitude, poke.Longitude, poke.TimeTillHiddenMs / 1000, int(origin.get_distance(other).radians * 6366468.241830914), direction))
 
+            timestamp = int(time.time())
+            add_pokemon(poke.pokemon.PokemonId, pokemons[poke.pokemon.PokemonId - 1]['Name'], poke.Latitude, poke.Longitude, timestamp, poke.TimeTillHiddenMs / 1000)
+
+        write_data_to_file()
         print('')
         walk = getNeighbors()
         next = LatLng.from_point(Cell(CellId(walk[2])).get_center())
-        if raw_input('The next cell is located at %s. Keep scanning? [Y/n]' % next) in {'n', 'N'}:
-            break
+        #if raw_input('The next cell is located at %s. Keep scanning? [Y/n]' % next) in {'n', 'N'}:
+        #    break
         set_location_coords(next.lat().degrees, next.lng().degrees, 0)
 
 if __name__ == '__main__':
