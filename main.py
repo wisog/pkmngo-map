@@ -49,6 +49,7 @@ COORDS_ALTITUDE = 0
 FLOAT_LAT = 0
 FLOAT_LONG = 0
 
+NUM_STEPS = 20
 DATA_FILE = 'data.json'
 DATA = []
 
@@ -144,8 +145,8 @@ def api_req(api_endpoint, access_token, *mehs, **kw):
                 print(p_ret)
                 print("\n\n")
 
-            print("[ ] Sleeping for 2 seconds to get around rate-limit.")
-            time.sleep(2)
+            print("[ ] Sleeping for 1 second")
+            time.sleep(1)
             return p_ret
         except Exception, e:
             if DEBUG:
@@ -310,6 +311,7 @@ def main():
         print('[-] Ooops...')
 
     origin = LatLng.from_degrees(FLOAT_LAT, FLOAT_LONG)
+    step = 0
     while True:
         original_lat = FLOAT_LAT
         original_long = FLOAT_LONG
@@ -367,7 +369,12 @@ def main():
         next = LatLng.from_point(Cell(CellId(walk[2])).get_center())
         #if raw_input('The next cell is located at %s. Keep scanning? [Y/n]' % next) in {'n', 'N'}:
         #    break
+        step += 1
         set_location_coords(next.lat().degrees, next.lng().degrees, 0)
+        if step >= NUM_STEPS:
+            set_location_coords(original_lat, original_long, 0)
+            step = 0
+
 
 if __name__ == '__main__':
     main()
