@@ -68,7 +68,6 @@ default_step = 0.001
 NUM_STEPS = 5
 DATA_FILE = 'data.json'
 DATA = []
-pokemons = {}
 gyms = {}
 pokestops = {}
 numbertoteam = {  # At least I'm pretty sure that's it. I could be wrong and then I'd be displaying the wrong owner team of gyms.
@@ -120,10 +119,10 @@ def set_location(location_name):
     if prog.match(location_name):
         local_lat, local_lng = [float(x) for x in location_name.split(",")]
         alt = 0
-        deflat, deflon = local_lat, local_lng
+        deflat, deflng = local_lat, local_lng
     else:
         loc = geolocator.geocode(location_name)
-        deflat, deflon = local_lat, local_lng = loc.latitude, loc.longitude
+        deflat, deflng = local_lat, local_lng = loc.latitude, loc.longitude
         alt = loc.altitude
         print '[!] Your given location: {}'.format(loc.address.encode('utf-8'))
 
@@ -131,13 +130,13 @@ def set_location(location_name):
     set_location_coords(local_lat, local_lng, alt)
 
 
-def set_location_coords(lat, long, alt):
+def set_location_coords(lat, lng, alt):
     global COORDS_LATITUDE, COORDS_LONGITUDE, COORDS_ALTITUDE
     global FLOAT_LAT, FLOAT_LONG
     FLOAT_LAT = lat
-    FLOAT_LONG = long
+    FLOAT_LONG = lng
     COORDS_LATITUDE = f2i(lat) # 0x4042bd7c00000000 # f2i(lat)
-    COORDS_LONGITUDE = f2i(long) # 0xc05e8aae40000000 #f2i(long)
+    COORDS_LONGITUDE = f2i(lng) # 0xc05e8aae40000000 #f2i(lng)
     COORDS_ALTITUDE = f2i(alt)
 
 def get_location_coords():
@@ -349,28 +348,28 @@ def scan(api_endpoint, access_token, response, origin, pokemons):
         visible = []
 
         for hh in hs:
-            try:
+            #try:
                 for cell in hh.cells:
                     for wild in cell.WildPokemon:
                         hash = wild.SpawnPointId + ':' + str(wild.pokemon.PokemonId)
                         if (hash not in seen):
                             visible.append(wild)
                             seen.add(hash)
-                if cell.Fort:
-                    for Fort in cell.Fort:
-                        if Fort.Enabled == True:
-                            if Fort.GymPoints:
-                                gyms[Fort.FortId] = [Fort.Team, Fort.Latitude, Fort.Longitude, Fort.GymPoints]
-                            elif Fort.FortType:
-                                expire_time = 0
-                                if Fort.LureInfo.LureExpiresTimestampMs:
-                                    expire_time = datetime\
-                                        .fromtimestamp(Fort.LureInfo.LureExpiresTimestampMs / 1000.0)\
-                                        .strftime("%H:%M:%S")
-                                if (expire_time != 0):
-                                    pokestops[Fort.FortId] = [Fort.Latitude, Fort.Longitude, expire_time]
-            except AttributeError:
-                break
+                    #if cell.Fort:
+                    #    for Fort in cell.Fort:
+                    #        if Fort.Enabled == True:
+                    #            if Fort.GymPoints:
+                    #                gyms[Fort.FortId] = [Fort.Team, Fort.Latitude, Fort.Longitude, Fort.GymPoints]
+                    #            elif Fort.FortType:
+                    #                expire_time = 0
+                    #                if Fort.LureInfo.LureExpiresTimestampMs:
+                    #                    expire_time = datetime\
+                    #                        .fromtimestamp(Fort.LureInfo.LureExpiresTimestampMs / 1000.0)\
+                    #                        .strftime("%H:%M:%S")
+                    #                if (expire_time != 0):
+                    #                    pokestops[Fort.FortId] = [Fort.Latitude, Fort.Longitude, expire_time]
+            #except AttributeError:
+            #    break
 
         for poke in visible:
             other = LatLng.from_degrees(poke.Latitude, poke.Longitude)
@@ -378,6 +377,8 @@ def scan(api_endpoint, access_token, response, origin, pokemons):
             # print(diff)
             difflat = diff.lat().degrees
             difflng = diff.lng().degrees
+
+            print("(%s) %s is visible at (%s, %s) for %s seconds" % (poke.pokemon.PokemonId, pokemons[poke.pokemon.PokemonId - 1]['Name'], poke.Latitude, poke.Longitude, poke.TimeTillHiddenMs / 1000))
 
             timestamp = int(time.time())
             add_pokemon(poke.pokemon.PokemonId, pokemons[poke.pokemon.PokemonId - 1]['Name'], poke.Latitude, poke.Longitude, timestamp, poke.TimeTillHiddenMs / 1000)
