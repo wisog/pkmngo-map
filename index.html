@@ -19,15 +19,34 @@
         margin: 5px;
         font-size: 12px;
         font-family: Arial, sans-serif;
-        height: 255px;
         width: 150px;
       }
-      #legend div {
-       height: 210px;
-       overflow: auto;
+      #legend #legend-list {
+        height: 210px;
+        overflow: auto;
       }
       #legend li {
-       list-style-type: none;
+        list-style-type: none;
+      }
+      #legend-title h3 {
+        margin-top: 5px;
+        margin-bottom: 5px;
+      }
+      #legend-title img {
+        width: 20px;
+        vertical-align: -5px;
+        -webkit-transform: rotate(180deg);
+        -moz-transform: rotate(180deg);
+        -ms-transform: rotate(180deg);
+        -o-transform: rotate(180deg);
+        transform: rotate(180deg);
+      }
+      #legend-title .show {
+       -webkit-transform: rotate(0deg);
+       -moz-transform: rotate(0deg);
+       -ms-transform: rotate(0deg);
+       -o-transform: rotate(0deg);
+       transform: rotate(0deg);
       }
     </style>
   </head>
@@ -77,6 +96,18 @@
         refreshData();
       };
 
+      function toggleList() {
+        var list = document.getElementById("legend-list");
+        var icon = document.getElementById("legend-icon");
+        if(list.style.display == "none"){
+          list.style.display = "block";
+          icon.classList.remove("show");
+        } else {
+          list.style.display = "none";
+          icon.classList.add("show");
+        }
+      }
+
 
       function refreshData() {
         getFile("data.json", true, function(response) {
@@ -93,6 +124,7 @@
             }
             listeners = [];
             markers = [];
+            layers = [];
 
             // Add updated markers
             for (var i = 0; i < data.length; i++) {
@@ -181,11 +213,11 @@
         var legend = document.createElement('div');
         legend.id = 'legend';
         var content = [];
-        content.push('<h3>Hide Pokemon</h3>');
+        content.push('<div id="legend-title"><h3><img id="legend-icon" src="./hide.png" onclick="toggleList();" />Hide Pokemon</h3></div>');
         content.push('<div id="legend-list"></div>');
         legend.innerHTML = content.join('');
         legend.index = 1;
-        map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(legend);
+        map.controls[google.maps.ControlPosition.RIGHT_TOP].push(legend);
       }
     </script>
   </body>
