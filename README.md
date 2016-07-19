@@ -13,9 +13,13 @@ his views will be rejected.
 This version works only with **PokemonTrainerClub** account.
 **Don't use your official account or you may end up Banned.**
 
+**Don't refresh Gyms and Pokestop data many time on Phone, it will consume much bandwith**
+
 ## Todo
+* Pokestop+Lure visualization
 * One Click Deploy on Heroku like [emeth-/pokelocater/](https://github.com/emeth-/pokelocater/)
 * Cache PTC Credentials
+* Save in localstorage Hide Pokemon
 
 ## Screen
 ![Screen](https://i.imgur.com/mpLvARC.png)
@@ -39,13 +43,16 @@ Generate a Google Maps API key here: https://console.developers.google.com/apis/
 
 Additional windows help here: https://www.reddit.com/r/pokemongodev/comments/4t8ohw/autoupdating_pokemon_go_map_scanner/d5g7xh80
 
+## Donate
+My Bitcoin address is `1GV4ckHwhsqn9UAwgM8qFYArA8njCqZ21y`
+
 ## License
 See LICENSE file
 
 ## Credits
 Thanks a lot to [Mila432](https://github.com/Mila432/Pokemon_Go_API), [Tejado](https://github.com/tejado/pokemongo-api-demo) for base API<br/>
 Thanks to [Leegao](https://github.com/leegao/pokemongo-api-demo/tree/simulation) for Pokemon scanning<br/>
-Thanks to [AHAAAAAAA](https://github.com/AHAAAAAAA/PokemonGo-Map) for Gym/PokeStop scanning
+Thanks to [AHAAAAAAA](https://github.com/AHAAAAAAA/PokemonGo-Map) for Gym/PokeStop scanning</br>
 Thanks to [memelyfe](https://github.com/memelyfe/pokemongo-api-demo/tree/maps) for PokeMap</br>
 
 Thanks to all [/r/pokemongodev](https://www.reddit.com/r/pokemongodev/) subreddit
