@@ -16,7 +16,6 @@ This version works only with **PokemonTrainerClub** account.
 **Don't refresh Gyms and Pokestop data many time on Phone, it will consume much bandwith**
 
 ## Todo
-* Pokestop+Lure visualization
 * One Click Deploy on Heroku like [emeth-/pokelocater/](https://github.com/emeth-/pokelocater/)
 * Cache PTC Credentials
 * Save in localstorage Hide Pokemon

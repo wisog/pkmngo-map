@@ -155,15 +155,15 @@
       }
 
       function getGym() {
-       // get Gym data
+         // get Gym data
          getFile("gym.json", true, function(response) {
            console.log("Refreshing gym data...");
            gymdata = JSON.parse(response);
            console.log("TODO: Gym");
 
            // Clear markers
-           for (var gymId in fort_markers) {
-             if (!fort_markers.hasOwnProperty(gymId)) {
+           for (var gymId in fort_markers['gym']) {
+             if (!fort_markers['gym'].hasOwnProperty(gymId)) {
                continue;
              }
              var marker = markers[gymId];
@@ -171,7 +171,7 @@
              marker.listeners[1].remove();
              marker.setMap(null);
 
-             delete fort_markers[gymId];
+             delete fort_markers['gym'][gymId];
            }
 
            // Add updated markers
@@ -208,17 +208,68 @@
              ];
 
              marker.listeners = listenerPair;
-             fort_markers[gymId] = marker;
+             fort_markers['gym'][gymId] = marker;
            }
          });
       }
 
       function getPokestop() {
-       // get Pokestop data
+         // get Pokestop data
          getFile("pkstop.json", true, function(response) {
            console.log("Refreshing pokestop data...");
-           pkstopdata = JSON.parse(response);
+           stopdata = JSON.parse(response);
            console.log("TODO: Pokestop");
+
+           // Clear markers
+           for (var stopId in fort_markers['stop']) {
+             if (!fort_markers['stop'].hasOwnProperty(stopId)) {
+               continue;
+             }
+             var marker = markers[stopId];
+             marker.listeners[0].remove();
+             marker.listeners[1].remove();
+             marker.setMap(null);
+
+             delete fort_markers['stop'][stopId];
+           }
+
+           // Add updated markers
+           for (var stopId in stopdata) {
+             if (!stopdata.hasOwnProperty(stopId)) {
+               // inherited, not interesting to us
+               continue;
+             }
+             var p = stopdata[stopId];
+
+             //console.log("Adding marker " + p.id);
+
+             var infowindow = new google.maps.InfoWindow({});
+
+             var lure = p.timeleft>0? "Lured": "";
+             var image = "./static/forts/Pstop"+lure+".png";
+             var detail_str = "<b>Pokestop "+lure+"</b><br>" + (p.timeleft>0? "Lure timeleft: "+p.timeleft+"<br>":"") + "Lat: "+p.lat+"<br>Long: "+p.lng;
+
+             var marker = new google.maps.Marker({
+               map: map,
+               position: {lat: p.lat, lng: p.lng},
+               label: "",
+               details: detail_str,
+               icon: image
+             });
+
+             var listenerPair = [
+               google.maps.event.addListener(marker, 'mouseover', function() {
+                 infowindow.setContent(this.details);
+                 infowindow.open(map, this);
+               }),
+               google.maps.event.addListener(marker, 'mouseout', function() {
+                 infowindow.close(map, this);
+               })
+             ];
+
+             marker.listeners = listenerPair;
+             fort_markers['stop'][stopId] = marker;
+           }
          });
       }
 
@@ -322,7 +373,10 @@
       gymdata = {};
       map = null;
       markers = {};
-      fort_markers = {};
+      fort_markers = {
+       'gym': {},
+       'stop': {}
+      };
       hidden_layers = [];
       layers = [];
       updated = false;
