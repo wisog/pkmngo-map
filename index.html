@@ -106,6 +106,23 @@
         return "http://icons.iconarchive.com/icons/hektakun/pokemon/72/" + pad(p.id, 3) + "-" + cap(name) + "-icon.png";
       }
 
+      function getTeamFromNum(id){
+       // At least I'm pretty sure that's it. I could be wrong and then I'd be displaying the wrong owner team of gyms.
+       var team = 'Gym';
+       switch (id) {
+        case 1:
+         team = 'Mystic';
+         break;
+        case 2:
+         team = 'Valor';
+         break;
+        case 3:
+         team = 'Instinct';
+         break;
+       }
+       return team;
+      }
+
       function copyToClipboard(text) {
         window.prompt("Copy to clipboard: Ctrl+C, Enter", text);
       }
@@ -138,66 +155,58 @@
        // get Gym data
          getFile("gym.json", true, function(response) {
            console.log("Refreshing gym data...");
-           var preLength = gymdata.length;
            gymdata = JSON.parse(response);
            console.log("TODO: Gym");
 
-/*
            // Clear markers
-           for (var i = 0; i < gym_markers.length; i++) {
-             listeners[i].a.remove();
-             listeners[i].b.remove();
-             gym_markers[i].setMap(null);
+           for (var gymId in fort_markers) {
+             if (!fort_markers.hasOwnProperty(gymId)) {
+               continue;
+             }
+             var marker = markers[gymId];
+             marker.listeners[0].remove();
+             marker.listeners[1].remove();
+             marker.setMap(null);
+
+             delete fort_markers[gymId];
            }
-           listeners = [];
-           markers = [];
-           layers = [];
 
            // Add updated markers
-           for (var i = 0; i < pkmndata.length; i++) {
-             var p = pkmndata[i];
-             if (!updated) {
-               map.setZoom(16);
-               map.panTo({lat: p.lat, lng: p.lng});
-               updated = true;
+           for (var gymId in gymdata) {
+             if (!gymdata.hasOwnProperty(gymId)) {
+               // inherited, not interesting to us
+               continue;
              }
+             var p = gymdata[gymId];
 
-             if(layers.indexOf(p.name) == -1){
-               layers.push(p.name);
-             }
+             //console.log("Adding marker " + p.id);
 
-             if(hidden_layers.indexOf(p.name) == -1){
-               // Pokemon not hidden
-               console.log("Adding marker " + p.name);
+             var infowindow = new google.maps.InfoWindow({});
 
-               var infowindow = new google.maps.InfoWindow({
-               });
+             var team = getTeamFromNum(p.team);
+             var image = "./static/forts/"+team+".png";
 
-               var image = getImage(p);
+             var marker = new google.maps.Marker({
+               map: map,
+               position: {lat: p.lat, lng: p.lng},
+               label: "",
+               details: "<b>"+team+" Gym</b><br>Points: " + p.points + "<br>Lat: "+p.lat+"<br>Long: "+p.lng,
+               icon: image
+             });
 
-               var marker = new google.maps.Marker({
-                 map: map,
-                 position: {lat: p.lat, lng: p.lng},
-                 label: "",
-                 title: "<b>"+p.name+"</b><br>Time left: " + formatSeconds(p.timeleft) + "<br>Lat: "+p.lat+"<br>Long: "+p.lng,
-                 icon: image
-               });
+             var listenerPair = [
+               google.maps.event.addListener(marker, 'mouseover', function() {
+                 infowindow.setContent(this.details);
+                 infowindow.open(map, this);
+               }),
+               google.maps.event.addListener(marker, 'mouseout', function() {
+                 infowindow.close(map, this);
+               })
+             ];
 
-               var listenerPair = {
-                 a: google.maps.event.addListener(marker, 'mouseover', function() {
-                   infowindow.setContent(this.title);
-                   infowindow.open(map, this);
-                 }),
-
-                 b: google.maps.event.addListener(marker, 'mouseout', function() {
-                   infowindow.close(map, this);
-                 })
-               };
-
-               listeners.push(listenerPair);
-               markers.push(marker);
-             }
-           }*/
+             marker.listeners = listenerPair;
+             fort_markers[gymId] = marker;
+           }
          });
       }
 
@@ -205,7 +214,6 @@
        // get Pokestop data
          getFile("pkstop.json", true, function(response) {
            console.log("Refreshing pokestop data...");
-           var preLength = pkstopdata.length;
            pkstopdata = JSON.parse(response);
            console.log("TODO: Pokestop");
          });
@@ -254,6 +262,8 @@
                 // Pokemon not hidden
                 console.log("Adding marker " + p.name);
 
+                var detail_str = "<b>"+p.name+"</b><br>Time left: " + formatSeconds(p.timeleft) + "<br>Lat: "+p.lat+"<br>Long: "+p.lng;
+
                 if (markers.hasOwnProperty(pokehash)) {
                   markers[pokehash].details = detail_str;
                   continue;
@@ -268,7 +278,7 @@
                   map: map,
                   position: {lat: p.lat, lng: p.lng},
                   label: "",
-                  details: "<b>"+p.name+"</b><br>Time left: " + formatSeconds(p.timeleft) + "<br>Lat: "+p.lat+"<br>Long: "+p.lng,
+                  details: detail_str,
                   icon: image
                 });
 
@@ -279,9 +289,6 @@
                  }),
                  google.maps.event.addListener(marker, 'mouseout', function() {
                    infowindow.close(map, this);
-                 }),
-                 google.maps.event.addListener(marker, 'click', function() {
-                   copyToClipboard(this.copy);
                  })
                 ];
 
@@ -300,7 +307,9 @@
               " onclick='toggleLayer(this.checked, this.id)' "+checked+"\/>" +
               pkmn + "<\/li>");
             }
-            list.innerHTML = content.join('');
+            if(list != null){
+              list.innerHTML = content.join('');
+            }
           }
         });
       }
@@ -310,6 +319,7 @@
       gymdata = {};
       map = null;
       markers = {};
+      fort_markers = {};
       hidden_layers = [];
       layers = [];
       updated = false;

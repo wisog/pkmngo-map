@@ -71,14 +71,8 @@ PKSTOP_DATA_FILE = 'pkstop.json'
 GYM_DATA_FILE = 'gym.json'
 DATA = {
     'pokemon':{},
-    'pokestop':[],
-    'gym':[]
-}
-numbertoteam = {  # At least I'm pretty sure that's it. I could be wrong and then I'd be displaying the wrong owner team of gyms.
-    0: 'Gym',
-    1: 'Mystic',
-    2: 'Valor',
-    3: 'Instinct',
+    'pokestop':{},
+    'gym':{}
 }
 
 def f2i(float):
@@ -133,21 +127,23 @@ def add_pokemon(pokeId, name, lat, lng, timestamp, timeleft):
         }
 
 def add_pokestop(pokestopId, lat, lng, timeleft):
-    DATA['pokestop'].append({
-        'id': pokestopId,
-        'lat': lat,
-        'lng': lng,
-        'timeleft': timeleft
-    })
+    if not pokestopId in DATA['pokestop']:
+        DATA['pokestop'][pokestopId] = {
+            'id': pokestopId,
+            'lat': lat,
+            'lng': lng,
+            'timeleft': timeleft
+        }
 
 def add_gym(gymId, team, lat, lng, points):
-    DATA['gym'].append({
-        'id': gymId,
-        'team': team,
-        'lat': lat,
-        'lng': lng,
-        'points': points
-    })
+    if not gymId in DATA['gym']:
+        DATA['gym'][gymId] = {
+            'id': gymId,
+            'team': team,
+            'lat': lat,
+            'lng': lng,
+            'points': points
+        }
 
 def set_location(location_name):
     geolocator = GoogleV3()
