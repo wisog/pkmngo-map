@@ -70,7 +70,7 @@ PKMN_DATA_FILE = 'pkmn.json'
 PKSTOP_DATA_FILE = 'pkstop.json'
 GYM_DATA_FILE = 'gym.json'
 DATA = {
-    'pokemon':[],
+    'pokemon':{},
     'pokestop':[],
     'gym':[]
 }
@@ -93,11 +93,11 @@ def h2f(hex):
 def prune():
     # prune despawned pokemon
     cur_time = int(time.time())
-    for i, poke in reversed(list(enumerate(DATA['pokemon']))):
+    for (pokehash, poke) in DATA['pokemon'].items():
         poke['timeleft'] = poke['timeleft'] - (cur_time - poke['timestamp'])
         poke['timestamp'] = cur_time
         if poke['timeleft'] <= 0:
-            DATA['pokemon'].pop(i)
+            del DATA['pokemon'][pokehash]
 
 def write_data_to_file():
     prune()
@@ -105,7 +105,7 @@ def write_data_to_file():
     # different file for bandwith save
     with open(PKMN_DATA_FILE, 'w') as f:
         json.dump(DATA['pokemon'], f, indent=2)
-        
+
     with open(PKSTOP_DATA_FILE, 'w') as f:
         json.dump(DATA['pokestop'], f, indent=2)
 
@@ -113,14 +113,24 @@ def write_data_to_file():
         json.dump(DATA['gym'], f, indent=2)
 
 def add_pokemon(pokeId, name, lat, lng, timestamp, timeleft):
-    DATA['pokemon'].append({
-        'id': pokeId,
-        'name': name,
-        'lat': lat,
-        'lng': lng,
-        'timestamp': timestamp,
-        'timeleft': timeleft
-    });
+    pokehash = '%s:%s:%s' % (lat, lng, pokeId)
+    if pokehash in DATA['pokemon']:
+        if abs(DATA['pokemon'][pokehash]['timeleft'] - timeleft) < 2:
+            # Assume it's the same one and average the expiry time
+            DATA['pokemon'][pokehash]['timeleft'] += timeleft
+            DATA['pokemon'][pokehash]['timeleft'] /= 2
+        else:
+            print('[-] Two %s at the same location (%s,%s)' % (name, lat, lng))
+            DATA['pokemon'][pokehash]['timeleft'] = min(DATA['pokemon'][pokehash]['timeleft'], timeleft)
+    else:
+        DATA['pokemon'][pokehash] = {
+            'id': pokeId,
+            'name': name,
+            'lat': lat,
+            'lng': lng,
+            'timestamp': timestamp,
+            'timeleft': timeleft
+        }
 
 def add_pokestop(pokestopId, lat, lng, timeleft):
     DATA['pokestop'].append({
@@ -128,7 +138,7 @@ def add_pokestop(pokestopId, lat, lng, timeleft):
         'lat': lat,
         'lng': lng,
         'timeleft': timeleft
-    });
+    })
 
 def add_gym(gymId, team, lat, lng, points):
     DATA['gym'].append({
@@ -137,7 +147,7 @@ def add_gym(gymId, team, lat, lng, points):
         'lat': lat,
         'lng': lng,
         'points': points
-    });
+    })
 
 def set_location(location_name):
     geolocator = GoogleV3()

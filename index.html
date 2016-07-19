@@ -106,6 +106,10 @@
         return "http://icons.iconarchive.com/icons/hektakun/pokemon/72/" + pad(p.id, 3) + "-" + cap(name) + "-icon.png";
       }
 
+      function copyToClipboard(text) {
+        window.prompt("Copy to clipboard: Ctrl+C, Enter", text);
+      }
+
       function toggleLayer(checked, pkmn) {
         if (checked) {
             hidden_layers.push(pkmn);
@@ -136,6 +140,64 @@
            console.log("Refreshing gym data...");
            var preLength = gymdata.length;
            gymdata = JSON.parse(response);
+           console.log("TODO: Gym");
+
+/*
+           // Clear markers
+           for (var i = 0; i < gym_markers.length; i++) {
+             listeners[i].a.remove();
+             listeners[i].b.remove();
+             gym_markers[i].setMap(null);
+           }
+           listeners = [];
+           markers = [];
+           layers = [];
+
+           // Add updated markers
+           for (var i = 0; i < pkmndata.length; i++) {
+             var p = pkmndata[i];
+             if (!updated) {
+               map.setZoom(16);
+               map.panTo({lat: p.lat, lng: p.lng});
+               updated = true;
+             }
+
+             if(layers.indexOf(p.name) == -1){
+               layers.push(p.name);
+             }
+
+             if(hidden_layers.indexOf(p.name) == -1){
+               // Pokemon not hidden
+               console.log("Adding marker " + p.name);
+
+               var infowindow = new google.maps.InfoWindow({
+               });
+
+               var image = getImage(p);
+
+               var marker = new google.maps.Marker({
+                 map: map,
+                 position: {lat: p.lat, lng: p.lng},
+                 label: "",
+                 title: "<b>"+p.name+"</b><br>Time left: " + formatSeconds(p.timeleft) + "<br>Lat: "+p.lat+"<br>Long: "+p.lng,
+                 icon: image
+               });
+
+               var listenerPair = {
+                 a: google.maps.event.addListener(marker, 'mouseover', function() {
+                   infowindow.setContent(this.title);
+                   infowindow.open(map, this);
+                 }),
+
+                 b: google.maps.event.addListener(marker, 'mouseout', function() {
+                   infowindow.close(map, this);
+                 })
+               };
+
+               listeners.push(listenerPair);
+               markers.push(marker);
+             }
+           }*/
          });
       }
 
@@ -145,29 +207,39 @@
            console.log("Refreshing pokestop data...");
            var preLength = pkstopdata.length;
            pkstopdata = JSON.parse(response);
+           console.log("TODO: Pokestop");
          });
       }
 
+      var preLength = -1;
       function refreshData() {
         getFile("pkmn.json", true, function(response) {
           console.log("Refreshing pokemon data...");
-          var preLength = pkmndata.length;
           pkmndata = JSON.parse(response);
 
-          if (preLength != pkmndata.length) {
+          if (preLength != response.length) {
+            preLength = response.length;
             // Clear markers
-            for (var i = 0; i < markers.length; i++) {
-              listeners[i].a.remove();
-              listeners[i].b.remove();
-              markers[i].setMap(null);
+            for (var pokehash in markers) {
+              if (!markers.hasOwnProperty(pokehash)) {
+                continue;
+              }
+              var marker = markers[pokehash];
+              marker.listeners[0].remove();
+              marker.listeners[1].remove();
+              marker.setMap(null);
+
+              delete markers[pokehash];
             }
-            listeners = [];
-            markers = [];
             layers = [];
 
             // Add updated markers
-            for (var i = 0; i < pkmndata.length; i++) {
-              var p = pkmndata[i];
+            for (var pokehash in pkmndata) {
+              if (!pkmndata.hasOwnProperty(pokehash)) {
+                // inherited, not interesting to us
+                continue;
+              }
+              var p = pkmndata[pokehash];
               if (!updated) {
                 map.setZoom(16);
                 map.panTo({lat: p.lat, lng: p.lng});
@@ -182,6 +254,11 @@
                 // Pokemon not hidden
                 console.log("Adding marker " + p.name);
 
+                if (markers.hasOwnProperty(pokehash)) {
+                  markers[pokehash].details = detail_str;
+                  continue;
+                }
+
                 var infowindow = new google.maps.InfoWindow({
                 });
 
@@ -191,23 +268,25 @@
                   map: map,
                   position: {lat: p.lat, lng: p.lng},
                   label: "",
-                  title: "<b>"+p.name+"</b><br>Time left: " + formatSeconds(p.timeleft) + "<br>Lat: "+p.lat+"<br>Long: "+p.lng,
+                  details: "<b>"+p.name+"</b><br>Time left: " + formatSeconds(p.timeleft) + "<br>Lat: "+p.lat+"<br>Long: "+p.lng,
                   icon: image
                 });
 
-                var listenerPair = {
-                  a: google.maps.event.addListener(marker, 'mouseover', function() {
-                    infowindow.setContent(this.title);
-                    infowindow.open(map, this);
-                  }),
+                var listenerPair = [
+                 google.maps.event.addListener(marker, 'mouseover', function() {
+                   infowindow.setContent(this.details);
+                   infowindow.open(map, this);
+                 }),
+                 google.maps.event.addListener(marker, 'mouseout', function() {
+                   infowindow.close(map, this);
+                 }),
+                 google.maps.event.addListener(marker, 'click', function() {
+                   copyToClipboard(this.copy);
+                 })
+                ];
 
-                  b: google.maps.event.addListener(marker, 'mouseout', function() {
-                    infowindow.close(map, this);
-                  })
-                };
-
-                listeners.push(listenerPair);
-                markers.push(marker);
+                marker.listeners = listenerPair;
+                markers[pokehash] = marker;
               }
             }
 
@@ -230,8 +309,7 @@
       pkstopdata = {};
       gymdata = {};
       map = null;
-      markers = [];
-      listeners = [];
+      markers = {};
       hidden_layers = [];
       layers = [];
       updated = false;
