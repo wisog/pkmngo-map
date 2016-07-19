@@ -22,7 +22,7 @@
         width: 150px;
       }
       #legend #legend-list {
-        height: 210px;
+        height: 150px;
         overflow: auto;
       }
       #legend li {
@@ -47,6 +47,10 @@
        -ms-transform: rotate(0deg);
        -o-transform: rotate(0deg);
        transform: rotate(0deg);
+      }
+      #legend-hide-gym, #legend-hide-pokestop {
+       font-size: 13px;
+       font-weight: bold;
       }
     </style>
   </head>
@@ -114,26 +118,43 @@
         refreshData();
       };
 
-      function toggleList() {
-        var list = document.getElementById("legend-list");
+      function toggleLegend() {
+        var content = document.getElementById("legend-content");
         var icon = document.getElementById("legend-icon");
-        if(list.style.display == "none"){
-          list.style.display = "block";
+        if(content.style.display == "none"){
+          content.style.display = "block";
           icon.classList.remove("show");
         } else {
-          list.style.display = "none";
+          content.style.display = "none";
           icon.classList.add("show");
         }
       }
 
+      function getGym() {
+       // get Gym data
+         getFile("gym.json", true, function(response) {
+           console.log("Refreshing gym data...");
+           var preLength = gymdata.length;
+           gymdata = JSON.parse(response);
+         });
+      }
+
+      function getPokestop() {
+       // get Pokestop data
+         getFile("pkstop.json", true, function(response) {
+           console.log("Refreshing pokestop data...");
+           var preLength = pkstopdata.length;
+           pkstopdata = JSON.parse(response);
+         });
+      }
 
       function refreshData() {
         getFile("pkmn.json", true, function(response) {
-          console.log("Refreshing data...");
-          var preLength = data.length;
-          data = JSON.parse(response);
+          console.log("Refreshing pokemon data...");
+          var preLength = pkmndata.length;
+          pkmndata = JSON.parse(response);
 
-          if (preLength != data.length) {
+          if (preLength != pkmndata.length) {
             // Clear markers
             for (var i = 0; i < markers.length; i++) {
               listeners[i].a.remove();
@@ -145,8 +166,8 @@
             layers = [];
 
             // Add updated markers
-            for (var i = 0; i < data.length; i++) {
-              var p = data[i];
+            for (var i = 0; i < pkmndata.length; i++) {
+              var p = pkmndata[i];
               if (!updated) {
                 map.setZoom(16);
                 map.panTo({lat: p.lat, lng: p.lng});
@@ -205,7 +226,9 @@
         });
       }
 
-      data = {};
+      pkmndata = {};
+      pkstopdata = {};
+      gymdata = {};
       map = null;
       markers = [];
       listeners = [];
@@ -231,8 +254,12 @@
         var legend = document.createElement('div');
         legend.id = 'legend';
         var content = [];
-        content.push('<div id="legend-title"><h3><img id="legend-icon" src="./static/hide.png" onclick="toggleList();" />Hide Pokemon</h3></div>');
-        content.push('<div id="legend-list"></div>');
+        content.push('<div id="legend-title"><h3><img id="legend-icon" src="./static/hide.png" onclick="toggleLegend();" />Toolbar</h3></div>');
+        content.push('<div id="legend-content">');
+        content.push('<div id="legend-hide-pokestop"><button onclick="getPokestop()">Refresh Pokestop</button></div>');
+        content.push('<div id="legend-hide-gym"><button onclick="getGym()">Refresh Gym</button></div>');
+        content.push('<div id="legend-hide-pkmn"><h3>Hide Pokemon</h3><div id="legend-list"></div></div>');
+        content.push('</div>');
         legend.innerHTML = content.join('');
         legend.index = 1;
         map.controls[google.maps.ControlPosition.RIGHT_TOP].push(legend);
