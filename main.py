@@ -66,10 +66,14 @@ deflat, deflng = 0, 0
 default_step = 0.001
 
 NUM_STEPS = 5
-DATA_FILE = 'data.json'
-DATA = []
-gyms = {}
-pokestops = {}
+PKMN_DATA_FILE = 'pkmn.json'
+PKSTOP_DATA_FILE = 'pkstop.json'
+GYM_DATA_FILE = 'gym.json'
+DATA = {
+    'pokemon':[],
+    'pokestop':[],
+    'gym':[]
+}
 numbertoteam = {  # At least I'm pretty sure that's it. I could be wrong and then I'd be displaying the wrong owner team of gyms.
     0: 'Gym',
     1: 'Mystic',
@@ -89,26 +93,50 @@ def h2f(hex):
 def prune():
     # prune despawned pokemon
     cur_time = int(time.time())
-    for i, poke in reversed(list(enumerate(DATA))):
+    for i, poke in reversed(list(enumerate(DATA['pokemon']))):
         poke['timeleft'] = poke['timeleft'] - (cur_time - poke['timestamp'])
         poke['timestamp'] = cur_time
         if poke['timeleft'] <= 0:
-            DATA.pop(i)
+            DATA['pokemon'].pop(i)
 
 def write_data_to_file():
     prune()
 
-    with open(DATA_FILE, 'w') as f:
-        json.dump(DATA, f, indent=2)
+    # different file for bandwith save
+    with open(PKMN_DATA_FILE, 'w') as f:
+        json.dump(DATA['pokemon'], f, indent=2)
+        
+    with open(PKSTOP_DATA_FILE, 'w') as f:
+        json.dump(DATA['pokestop'], f, indent=2)
+
+    with open(GYM_DATA_FILE, 'w') as f:
+        json.dump(DATA['gym'], f, indent=2)
 
 def add_pokemon(pokeId, name, lat, lng, timestamp, timeleft):
-    DATA.append({
+    DATA['pokemon'].append({
         'id': pokeId,
         'name': name,
         'lat': lat,
         'lng': lng,
         'timestamp': timestamp,
         'timeleft': timeleft
+    });
+
+def add_pokestop(pokestopId, lat, lng, timeleft):
+    DATA['pokestop'].append({
+        'id': pokestopId,
+        'lat': lat,
+        'lng': lng,
+        'timeleft': timeleft
+    });
+
+def add_gym(gymId, team, lat, lng, points):
+    DATA['gym'].append({
+        'id': gymId,
+        'team': team,
+        'lat': lat,
+        'lng': lng,
+        'points': points
     });
 
 def set_location(location_name):
@@ -348,28 +376,28 @@ def scan(api_endpoint, access_token, response, origin, pokemons):
         visible = []
 
         for hh in hs:
-            #try:
+            try:
                 for cell in hh.cells:
                     for wild in cell.WildPokemon:
                         hash = wild.SpawnPointId + ':' + str(wild.pokemon.PokemonId)
                         if (hash not in seen):
                             visible.append(wild)
                             seen.add(hash)
-                    #if cell.Fort:
-                    #    for Fort in cell.Fort:
-                    #        if Fort.Enabled == True:
-                    #            if Fort.GymPoints:
-                    #                gyms[Fort.FortId] = [Fort.Team, Fort.Latitude, Fort.Longitude, Fort.GymPoints]
-                    #            elif Fort.FortType:
-                    #                expire_time = 0
-                    #                if Fort.LureInfo.LureExpiresTimestampMs:
-                    #                    expire_time = datetime\
-                    #                        .fromtimestamp(Fort.LureInfo.LureExpiresTimestampMs / 1000.0)\
-                    #                        .strftime("%H:%M:%S")
-                    #                if (expire_time != 0):
-                    #                    pokestops[Fort.FortId] = [Fort.Latitude, Fort.Longitude, expire_time]
-            #except AttributeError:
-            #    break
+                    if cell.Fort:
+                        for Fort in cell.Fort:
+                            if Fort.Enabled == True:
+                                if Fort.GymPoints:
+                                    add_gym(Fort.FortId, Fort.Team, Fort.Latitude, Fort.Longitude, Fort.GymPoints)
+                                elif Fort.FortType:
+                                    expire_time = 0
+                                    if Fort.LureInfo.LureExpiresTimestampMs:
+                                        expire_time = datetime\
+                                            .fromtimestamp(Fort.LureInfo.LureExpiresTimestampMs / 1000.0)\
+                                            .strftime("%H:%M:%S")
+                                    add_pokestop(Fort.FortId, Fort.Latitude, Fort.Longitude, expire_time)
+
+            except AttributeError:
+                break
 
         for poke in visible:
             other = LatLng.from_degrees(poke.Latitude, poke.Longitude)

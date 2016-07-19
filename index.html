@@ -128,7 +128,7 @@
 
 
       function refreshData() {
-        getFile("data.json", true, function(response) {
+        getFile("pkmn.json", true, function(response) {
           console.log("Refreshing data...");
           var preLength = data.length;
           data = JSON.parse(response);
