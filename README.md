@@ -22,7 +22,7 @@ This version works only with **PokemonTrainerClub** account.
 * Save in localstorage Hide Pokemon
 
 ## Screen
-![Screen](https://i.imgur.com/mpLvARC.png)
+![Screen1](https://i.imgur.com/mpLvARC.png) ![Screen2](https://i.imgur.com/SeXBw9Y.png)
 
 ## Instructions
 
