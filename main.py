@@ -369,8 +369,8 @@ def scan(api_endpoint, access_token, response, origin, pokemons):
                                         .strftime("%H:%M:%S")
                                 if (expire_time != 0):
                                     pokestops[Fort.FortId] = [Fort.Latitude, Fort.Longitude, expire_time]
-        except AttributeError:
-            break
+            except AttributeError:
+                break
 
         for poke in visible:
             other = LatLng.from_degrees(poke.Latitude, poke.Longitude)
