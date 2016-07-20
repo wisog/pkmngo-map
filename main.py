@@ -135,14 +135,15 @@ def add_pokestop(pokestopId, lat, lng, timeleft):
             'timeleft': timeleft
         }
 
-def add_gym(gymId, team, lat, lng, points):
+def add_gym(gymId, team, lat, lng, points, pokemonGuard):
     if not gymId in DATA['gym']:
         DATA['gym'][gymId] = {
             'id': gymId,
             'team': team,
             'lat': lat,
             'lng': lng,
-            'points': points
+            'points': points,
+            'guard': pokemonGuard
         }
 
 def set_location(location_name):
@@ -393,7 +394,8 @@ def scan(api_endpoint, access_token, response, origin, pokemons):
                         for Fort in cell.Fort:
                             if Fort.Enabled == True:
                                 if Fort.GymPoints:
-                                    add_gym(Fort.FortId, Fort.Team, Fort.Latitude, Fort.Longitude, Fort.GymPoints)
+
+                                    add_gym(Fort.FortId, Fort.Team, Fort.Latitude, Fort.Longitude, Fort.GymPoints, pokemons[Fort.GuardPokemonId - 1]['Name'])
                                 elif Fort.FortType:
                                     expire_time = 0
                                     if Fort.LureInfo.LureExpiresTimestampMs:
