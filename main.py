@@ -22,10 +22,12 @@ except ImportError:
     pass
 from s2sphere import *
 
+
 def encode(cellid):
     output = []
     encoder._VarintEncoder()(output.append, cellid)
     return ''.join(output)
+
 
 def getNeighbors():
     origin = CellId.from_lat_lng(LatLng.from_degrees(FLOAT_LAT, FLOAT_LONG)).parent(15)
@@ -93,6 +95,7 @@ def prune():
         if poke['timeleft'] <= 0:
             del DATA['pokemon'][pokehash]
 
+
 def write_data_to_file():
     prune()
 
@@ -105,6 +108,7 @@ def write_data_to_file():
 
     with open(GYM_DATA_FILE, 'w') as f:
         json.dump(DATA['gym'], f, indent=2)
+
 
 def add_pokemon(pokeId, name, lat, lng, timestamp, timeleft):
     pokehash = '%s:%s:%s' % (lat, lng, pokeId)
@@ -126,6 +130,7 @@ def add_pokemon(pokeId, name, lat, lng, timestamp, timeleft):
             'timeleft': timeleft
         }
 
+
 def add_pokestop(pokestopId, lat, lng, timeleft):
     if not pokestopId in DATA['pokestop']:
         DATA['pokestop'][pokestopId] = {
@@ -134,6 +139,7 @@ def add_pokestop(pokestopId, lat, lng, timeleft):
             'lng': lng,
             'timeleft': timeleft
         }
+
 
 def add_gym(gymId, team, lat, lng, points, pokemonGuard):
     if not gymId in DATA['gym']:
@@ -226,6 +232,7 @@ def api_req(api_endpoint, access_token, *mehs, **kw):
             time.sleep(0.51)
             continue
 
+
 def get_profile(access_token, api, useauth, *reqq):
     req = pokemon_pb2.RequestEnvelop()
 
@@ -255,6 +262,7 @@ def get_profile(access_token, api, useauth, *reqq):
         req5.MergeFrom(reqq[4])
 
     return api_req(api, access_token, req, useauth = useauth)
+
 
 def get_api_endpoint(access_token, api = API_URL):
     p_ret = get_profile(access_token, api, None)
@@ -310,6 +318,7 @@ def login_ptc(username, password):
     access_token = re.sub('.*access_token=', '', access_token)
     return access_token
 
+
 def raw_heartbeat(api_endpoint, access_token, response):
     m4 = pokemon_pb2.RequestEnvelop.Requests()
     m = pokemon_pb2.RequestEnvelop.MessageSingleInt()
@@ -346,6 +355,7 @@ def raw_heartbeat(api_endpoint, access_token, response):
     heartbeat = pokemon_pb2.ResponseEnvelop.HeartbeatPayload()
     heartbeat.ParseFromString(payload)
     return heartbeat
+
 
 def heartbeat(api_endpoint, access_token, response):
     while True:
@@ -394,7 +404,6 @@ def scan(api_endpoint, access_token, response, origin, pokemons):
                         for Fort in cell.Fort:
                             if Fort.Enabled == True:
                                 if Fort.GymPoints:
-
                                     add_gym(Fort.FortId, Fort.Team, Fort.Latitude, Fort.Longitude, Fort.GymPoints, pokemons[Fort.GuardPokemonId - 1]['Name'])
                                 elif Fort.FortType:
                                     expire_time = 0
@@ -415,7 +424,7 @@ def scan(api_endpoint, access_token, response, origin, pokemons):
             difflng = diff.lng().degrees
 
             print("(%s) %s is visible at (%s, %s) for %s seconds" % (poke.pokemon.PokemonId, pokemons[poke.pokemon.PokemonId - 1]['Name'], poke.Latitude, poke.Longitude, poke.TimeTillHiddenMs / 1000))
-
+            # Mandar a log para explotar luego
             timestamp = int(time.time())
             add_pokemon(poke.pokemon.PokemonId, pokemons[poke.pokemon.PokemonId - 1]['Name'], poke.Latitude, poke.Longitude, timestamp, poke.TimeTillHiddenMs / 1000)
 
@@ -431,28 +440,24 @@ def scan(api_endpoint, access_token, response, origin, pokemons):
         print('[+] Scan: %0.1f %%' % (((steps + (pos * .25) - .25) / steplimit**2) * 100))
 
 
-def main():
+def main(location):
     full_path = os.path.realpath(__file__)
     (path, filename) = os.path.split(full_path)
 
     write_data_to_file()
     pokemons = json.load(open(path + '/pokemon.json'))
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-u", "--username", help="PTC Username", required=True)
-    parser.add_argument("-p", "--password", help="PTC Password", required=True)
-    parser.add_argument("-l", "--location", help="Location", required=True)
-    parser.add_argument("-d", "--debug", help="Debug Mode", action='store_true')
-    parser.set_defaults(DEBUG=False)
-    args = parser.parse_args()
 
-    if args.debug:
+    debug = False
+
+
+    if debug:
         global DEBUG
         DEBUG = True
         print('[!] DEBUG mode on')
 
-    set_location(args.location)
+    set_location(location)
 
-    access_token = login_ptc(args.username, args.password)
+    access_token = login_ptc('pgoags', 'pgoags')
     if access_token is None:
         print('[-] Error logging in: possible wrong username/password')
         return
@@ -485,9 +490,22 @@ def main():
 
     origin = LatLng.from_degrees(FLOAT_LAT, FLOAT_LONG)
 
-    while True:
-        scan(api_endpoint, access_token, response, origin, pokemons)
 
+    scan(api_endpoint, access_token, response, origin, pokemons)
+
+    pkmns = open(PKMN_DATA_FILE)
+    return pkmns.read()
 
 if __name__ == '__main__':
-    main()
+    from bottle import route, run
+
+    @route('/test/<data>')
+    def index(data):
+        json_str = json.dumps(data)
+        print json_str
+
+    @route('/<location>')
+    def index(location):
+        return main(location)
+
+    run(host='localhost', port=8080, debug=True)
